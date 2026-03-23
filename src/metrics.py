@@ -3,7 +3,7 @@ Custom evaluation metrics for thyroid disease classification.
 """
 
 import numpy as np
-from sklearn.metrics import make_scorer, fbeta_score, recall_score
+from sklearn.metrics import make_scorer, fbeta_score
 
 
 def thyroid_disease_f2_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
