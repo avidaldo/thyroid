@@ -6,23 +6,21 @@ import numpy as np
 from sklearn.metrics import make_scorer, fbeta_score, recall_score
 
 
-def thyroid_mean_recall(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+def thyroid_disease_f2_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     """
-    Calculate the mean recall for hyperthyroid and hypothyroid classes.
+    Calculate the Macro F2 Score for hyperthyroid and hypothyroid classes.
     
-    This metric focuses exclusively on the minority "sick" classes, ignoring
-    the dominant "negative" class. It provides a fair assessment of how well
-    the model detects actual thyroid conditions.
+    This metric explicitly focuses on the minority "sick" classes, assigning
+    twice as much weight to Recall as Precision. This mitigates the risk of a 
+    trivial classifier that predicts everyone is sick just to maximize recall.
     
     Args:
         y_true: Ground truth labels (string or integer encoded).
         y_pred: Predicted labels (same encoding as y_true).
         
     Returns:
-        Mean of hyperthyroid recall and hypothyroid recall (0.0 to 1.0).
+        Macro F2 Score of the disease classes (0.0 to 1.0).
     """
-    # Convert to numpy arrays to handle pandas Series with non-sequential indices
-    # (which occur during cross-validation splits where the original index is preserved)
     y_true = np.asarray(y_true)
     y_pred = np.asarray(y_pred)
     
@@ -37,94 +35,16 @@ def thyroid_mean_recall(y_true: np.ndarray, y_pred: np.ndarray) -> float:
         hyper_label = 'hyperthyroid'
         hypo_label = 'hypothyroid'
     
-    return float(recall_score(
+    # Calculate Macro F2 score focusing ONLY on the disease labels
+    # beta=2 weights recall as twice as important as precision
+    return float(fbeta_score(
         y_true, 
         y_pred, 
+        beta=2, 
         labels=[hyper_label, hypo_label], 
         average='macro', 
         zero_division=0
     ))
 
 # Pre-built scorers for convenience with cross_val_score, GridSearchCV, etc.
-thyroid_scorer = make_scorer(thyroid_mean_recall)
-
-
-# def thyroid_recall_scorer(estimator, X, y) -> float:
-#     """
-#     Scorer function compatible with scikit-learn's cross_val_score and GridSearchCV.
-    
-#     This wrapper allows using thyroid_mean_recall directly with scikit-learn's
-#     cross-validation utilities. 
-    
-#     Args:
-#         estimator: Fitted scikit-learn estimator with predict method.
-#         X: Feature matrix.
-#         y: True labels.
-        
-#     Returns:
-#         Thyroid mean recall score.
-#     """
-#     y_pred = estimator.predict(X)
-#     return thyroid_mean_recall(y, y_pred)
-
-
-# def thyroid_disease_f2_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
-#     """
-#     Calculate the Macro F2 Score for hyperthyroid and hypothyroid classes.
-    
-#     This metric explicitly focuses on the minority "sick" classes, assigning
-#     twice as much weight to Recall as Precision. This mitigates the risk of a 
-#     trivial classifier that predicts everyone is sick just to maximize recall.
-    
-#     Args:
-#         y_true: Ground truth labels (string or integer encoded).
-#         y_pred: Predicted labels (same encoding as y_true).
-        
-#     Returns:
-#         Macro F2 Score of the disease classes (0.0 to 1.0).
-#     """
-#     y_true = np.asarray(y_true)
-#     y_pred = np.asarray(y_pred)
-    
-#     # Handle both string labels and integer-encoded labels safely
-#     if np.issubdtype(y_true.dtype, np.integer) or (len(y_true) > 0 and isinstance(y_true[0], (int, np.integer))):
-#         # Integer labels: assume standard LabelEncoder ordering
-#         # alphabetical: hyperthyroid=0, hypothyroid=1, negative=2
-#         hyper_label = 0
-#         hypo_label = 1
-#     else:
-#         # String labels
-#         hyper_label = 'hyperthyroid'
-#         hypo_label = 'hypothyroid'
-    
-#     # Calculate Macro F2 score focusing ONLY on the disease labels
-#     # beta=2 weights recall as twice as important as precision
-#     return float(fbeta_score(
-#         y_true, 
-#         y_pred, 
-#         beta=2, 
-#         labels=[hyper_label, hypo_label], 
-#         average='macro', 
-#         zero_division=0
-#     ))
-
-# def thyroid_f2_scorer(estimator, X, y) -> float:
-#     """
-#     Scorer function compatible with scikit-learn's cross_val_score and GridSearchCV.
-    
-#     This wrapper allows using thyroid_disease_f2_score directly with scikit-learn's
-#     cross-validation utilities. 
-    
-#     Args:
-#         estimator: Fitted scikit-learn estimator with predict method.
-#         X: Feature matrix.
-#         y: True labels.
-        
-#     Returns:
-#         Thyroid Macro F2 score.
-#     """
-#     y_pred = estimator.predict(X)
-#     return thyroid_disease_f2_score(y, y_pred)
-
-
-# thyroid_f2_scorer_obj = make_scorer(thyroid_disease_f2_score)
+thyroid_scorer = make_scorer(thyroid_disease_f2_score)
