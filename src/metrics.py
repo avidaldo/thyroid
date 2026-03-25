@@ -3,7 +3,7 @@ Custom evaluation metrics for thyroid disease classification.
 """
 
 import numpy as np
-from sklearn.metrics import make_scorer, fbeta_score
+from sklearn.metrics import make_scorer, fbeta_score, recall_score
 
 
 def thyroid_disease_f2_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
@@ -48,3 +48,31 @@ def thyroid_disease_f2_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 # Pre-built scorers for convenience with cross_val_score, GridSearchCV, etc.
 thyroid_scorer = make_scorer(thyroid_disease_f2_score)
+
+
+def thyroid_disease_recall_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """
+    Mean recall of the two disease classes (hyperthyroid + hypothyroid), ignoring the
+    healthy "negative" class entirely.
+
+    Unlike the F2 scorer this puts no weight on Precision, which biases hyperparameter
+    search towards high-sensitivity configurations.  Use this scorer when the clinical
+    priority is to minimise False Negatives and a downstream physician review is assumed
+    for all positive predictions.
+
+    Alphabetical LabelEncoder ordering (used by this project):
+        hyperthyroid=0, hypothyroid=1, negative=2
+    """
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+
+    if np.issubdtype(y_true.dtype, np.integer) or (len(y_true) > 0 and isinstance(y_true[0], (int, np.integer))):
+        hyper_label, hypo_label = 0, 1
+    else:
+        hyper_label, hypo_label = 'hyperthyroid', 'hypothyroid'
+
+    recalls = recall_score(y_true, y_pred, labels=[hyper_label, hypo_label], average=None, zero_division=0)
+    return float(np.mean(recalls))
+
+
+disease_recall_scorer = make_scorer(thyroid_disease_recall_score)
